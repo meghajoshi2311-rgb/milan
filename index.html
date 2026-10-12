@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>दुकान का हिसाब</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Hind:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F4EA; --card:#FFFFFF; --ink:#2A1A16; --muted:#6B5E58; --line:#D9D5C8;
+  --brand:#6D2133; --brand-ink:#FFFFFF; --brand-soft:#F8E6EA; --margin:#E4A3B2;
+  --kesar:#E39E12; --good:#1E6B3A; --good-soft:#E0F0E4; --bad:#B3261E; --bad-soft:#FBE3E0;
+  --aw1:#6D2133; --aw2:#F3CBD3;
+  --head:"Baloo 2","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"Hind","Noto Sans Devanagari",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15110F; --card:#211A17; --ink:#F5EBE4; --muted:#B9AAA2; --line:#3B312C;
+    --brand:#EE9AB0; --brand-ink:#2A0E17; --brand-soft:#33212A; --margin:#7B3A4C;
+    --kesar:#F2B33D; --good:#74D493; --good-soft:#1B3225; --bad:#FF8F86; --bad-soft:#3C201D;
+    --aw1:#8E2F47; --aw2:#C998A5;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15110F; --card:#211A17; --ink:#F5EBE4; --muted:#B9AAA2; --line:#3B312C;
+  --brand:#EE9AB0; --brand-ink:#2A0E17; --brand-soft:#33212A; --margin:#7B3A4C;
+  --kesar:#F2B33D; --good:#74D493; --good-soft:#1B3225; --bad:#FF8F86; --bad-soft:#3C201D;
+  --aw1:#8E2F47; --aw2:#C998A5;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 var(--body);min-height:100%}
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--aw1);z-index:50}
+button,input{font-family:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,a:focus-visible,.in:focus-visible{outline:3px solid var(--kesar);outline-offset:2px}
+
+/* दुकान की छत (awning) */
+.awning{position:relative;height:30px}
+.awning::before{content:"";position:absolute;left:0;right:0;top:0;height:18px;
+  background:repeating-linear-gradient(90deg,var(--aw1) 0 20px,var(--aw2) 20px 40px)}
+.awning::after{content:"";position:absolute;left:0;right:0;top:18px;height:12px;
+  background:
+   radial-gradient(circle at 10px 0,var(--aw1) 10px,transparent 10.5px) 0 0/40px 12px repeat-x,
+   radial-gradient(circle at 10px 0,var(--aw2) 10px,transparent 10.5px) 20px 0/40px 12px repeat-x}
+
+.wrap{max-width:560px;margin:0 auto;padding:0 16px 110px}
+.sign{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0 4px}
+.sign h1{font:700 26px/1.2 var(--head);margin:0;overflow-wrap:anywhere}
+.pill{display:inline-flex;align-items:center;gap:6px;flex:none;font:500 13px var(--body);padding:5px 11px;
+  border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--muted)}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+.pill.warn::before{background:var(--kesar)}
+.loading{color:var(--muted);padding:30px 0;text-align:center}
+
+/* तारीख */
+.datebar{display:flex;align-items:stretch;gap:8px;margin:8px 0 14px}
+.datebar .ic{width:46px;min-height:50px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:24px;line-height:1}
+.datebar .ic:disabled{opacity:.35;cursor:default}
+.datepick{position:relative;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  border-radius:12px;background:var(--card);border:1.5px solid var(--line);padding:4px 8px;text-align:center}
+.datepick input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.dl{font:600 17px/1.25 var(--head)}
+.dsub{font-size:13px;color:var(--muted)}
+.tolink{display:block;margin:-6px auto 12px;border:0;background:transparent;color:var(--brand);font:600 15px var(--body);padding:6px 10px}
+
+/* खाता-पन्ना */
+.khata{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px 12px 24px;margin-bottom:8px}
+.khata::before{content:"";position:absolute;left:10px;top:0;bottom:0;width:4px;border-left:1px solid var(--margin);border-right:1px solid var(--margin)}
+.khata h2{font:600 18px/1.3 var(--head);margin:0 0 4px}
+.kh{display:flex;align-items:baseline;gap:8px;padding:6px 0}
+.kh .lead{flex:1;min-width:12px;border-bottom:2px dotted var(--line);transform:translateY(-4px)}
+.kh b{font:600 17px/1.2 var(--head);white-space:nowrap}
+.kh.sub{padding:2px 0 2px 14px}
+.kh.sub .l{font-size:14px;color:var(--muted)}
+.kh.sub b{font-size:14px;font-weight:500;color:var(--muted)}
+.kh.res{margin:8px -8px 4px;padding:8px 10px;border-radius:10px;align-items:center}
+.kh.res .l{font:700 20px/1.2 var(--head)}
+.kh.res b{font:700 30px/1.1 var(--head)}
+.kh.res.good{background:var(--good-soft)} .kh.res.bad{background:var(--bad-soft)}
+.kh.cut{margin-top:6px;padding-top:10px;border-top:1px solid var(--line)}
+.good{color:var(--good)} .bad{color:var(--bad)}
+.fine{font-size:13px;color:var(--muted);margin:2px 0 0}
+
+/* हर हिस्सा */
+.blk{padding:14px 0 12px;border-top:1px solid var(--line)}
+.blk-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.blk h3{font:600 19px/1.3 var(--head);margin:0}
+.hint{font-size:13.5px;color:var(--muted);margin:2px 0 0;line-height:1.4}
+.blk-t{font:700 20px/1.3 var(--head);white-space:nowrap}
+.ent{list-style:none;margin:8px 0 8px;padding:0}
+.ent li{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dotted var(--line);min-height:48px}
+.ent .nt{flex:1;min-width:0;overflow-wrap:anywhere}
+.ent .nt.none{color:var(--muted)}
+.ent .am{font:600 17px var(--head);white-space:nowrap}
+.ent li.empty{color:var(--muted);font-size:14px;border-bottom:0;min-height:0;padding:2px 0}
+.x{min-width:42px;height:42px;border-radius:10px;border:0;background:transparent;color:var(--muted);font-size:18px}
+.x.armed{background:var(--bad-soft);color:var(--bad);font:600 14px var(--body);padding:0 10px}
+.add{width:100%;min-height:46px;border:1.5px dashed var(--brand);border-radius:12px;background:transparent;color:var(--brand);font:600 16px var(--body)}
+.form{display:grid;gap:8px;margin-top:6px;padding:12px;border-radius:12px;background:var(--brand-soft)}
+.lbl{display:block;font:500 14px var(--body);color:var(--muted);margin:0 0 3px}
+.in{width:100%;height:48px;border:1.5px solid var(--line);border-radius:10px;padding:0 12px;font:500 16px var(--body);background:var(--card);color:var(--ink)}
+.in:focus{border-color:var(--brand)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:12px;border:1.5px solid var(--brand);background:transparent;color:var(--brand);font:600 16px var(--body);text-decoration:none;text-align:center}
+.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.btn.ghost{border-color:var(--line);color:var(--muted)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.wide{width:100%}
+.frow{display:flex;gap:8px}.frow .btn{flex:1}
+.stack{display:grid;gap:10px}
+
+/* बिल */
+.pg{font:700 22px/1.3 var(--head);margin:14px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
+.chip{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:99px;min-height:42px;padding:4px 14px;font:500 15px var(--body)}
+.chip small{color:var(--muted);margin-left:6px;font-size:13px}
+.sug{display:grid;margin-top:4px}
+.sug:empty{display:none}
+.sug button{display:flex;justify-content:space-between;align-items:center;min-height:46px;padding:0 12px;border:1.5px solid var(--line);border-top-width:0;background:var(--card);color:var(--ink);font:500 16px var(--body);text-align:left}
+.sug button:first-child{border-top-width:1.5px;border-radius:10px 10px 0 0}
+.sug button:last-child{border-radius:0 0 10px 10px}
+.sug button:only-child{border-radius:10px}
+.lines{list-style:none;margin:6px 0;padding:0}
+.lines li{display:grid;grid-template-columns:1fr auto auto 40px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dotted var(--line)}
+.ln{overflow-wrap:anywhere}.ln small{display:block;color:var(--muted);font-size:13px}
+.step{display:flex;align-items:center;gap:2px}
+.step button{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;line-height:1}
+.step span{min-width:30px;text-align:center;font:600 16px var(--head)}
+.lines b{font:600 16px var(--head);white-space:nowrap}
+.tot{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 12px}
+.tot span{font:600 18px var(--head)}
+.tot big{font:700 36px/1.1 var(--head)}
+.brow{border-bottom:1px dotted var(--line)}
+.brow>button{width:100%;display:flex;gap:10px;align-items:center;padding:8px 0;border:0;background:transparent;color:inherit;text-align:left;font:inherit;min-height:52px}
+.bno{font:700 16px var(--head);color:var(--brand);min-width:34px}
+.bmid{flex:1;min-width:0;overflow-wrap:anywhere}
+.bmid small{display:block;color:var(--muted);font-size:13px}
+.brow b{font:600 17px var(--head);white-space:nowrap}
+.chev{color:var(--muted);width:16px;text-align:center}
+.bdet{padding:2px 0 14px;display:grid;gap:10px}
+.bdet ul{list-style:none;margin:0;padding:0}
+.bdet li{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.bdet li span:last-child{white-space:nowrap}
+
+/* रिपोर्ट */
+.seg{display:flex;background:var(--brand-soft);border-radius:12px;padding:4px;gap:4px;margin:8px 0 12px}
+.seg button{flex:1;min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--brand);font:600 16px var(--body)}
+.seg button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.tbl{margin-top:6px}
+.trow{display:grid;grid-template-columns:1.25fr 1fr 1fr 1.05fr;gap:6px;width:100%;padding:11px 2px;border:0;border-bottom:1px dotted var(--line);background:transparent;color:inherit;font:500 14.5px var(--body);text-align:right;align-items:center}
+.trow>:first-child{text-align:left}
+.trow.head{font-size:13px;color:var(--muted);border-bottom:1.5px solid var(--ink);cursor:default;padding-bottom:6px}
+.trow.dim{color:var(--muted)}
+.trow.foot{border-top:2px solid var(--ink);border-bottom:0;font-weight:600;cursor:default}
+.trow b{font-weight:600}
+button.trow{cursor:pointer}
+
+/* सामान और सेटिंग */
+.items{list-style:none;margin:8px 0;padding:0}
+.items li{display:grid;grid-template-columns:1fr 104px 42px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dotted var(--line)}
+.items .in{height:44px}
+.setrow{margin:12px 0}
+.note{font-size:14px;color:var(--muted);margin:6px 0 0;line-height:1.45}
+
+/* नीचे का मेन्यू */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;gap:4px;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:54px;border:0;background:transparent;color:var(--muted);font:500 13px var(--body);border-radius:12px}
+.nav svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav button[aria-current="page"]{color:var(--brand);background:var(--brand-soft);font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:90%;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:15px;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s;text-align:center}
+.toast.on{opacity:1}
+.toast.err{background:var(--bad);color:#fff}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="awning" aria-hidden="true"></div>
+<div class="wrap">
+  <div class="sign">
+    <h1 id="shop"></h1>
+    <button class="pill" id="badge" data-a="tab" data-t="items"></button>
+  </div>
+  <main id="view"><p class="loading">खुल रहा है…</p></main>
+</div>
+<nav class="nav" id="nav" aria-label="Menu"></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+
+const KEY = 'bakery_khata_v1';
+
+/* ===== भाषा: हिंदी (देवनागरी) और Hinglish ===== */
+const STR = {
+hi:{
+ shopDef:'मेरी दुकान', loading:'खुल रहा है…',
+ nDay:'हिसाब', nBill:'बिल', nRep:'रिपोर्ट', nItems:'सामान',
+ today:'आज', toToday:'आज पर जाएं', prevDay:'पिछला दिन', nextDay:'अगला दिन', pickDate:'तारीख चुनें',
+ cat_open:'घर से लिए', hint_open:'दुकान के लिए घर से कितने रुपये लेकर निकले',
+ cat_exp:'खर्चा', hint_exp:'किराया, मज़दूरी, बिजली, चाय-पानी… किसे कितना दिया',
+ cat_sale:'बिना-बिल की बिक्री', hint_sale:'जो बिक्री बिल में नहीं लिखी, वो यहाँ जोड़ें. बिल वाली बिक्री अपने-आप जुड़ती है',
+ cat_pur:'खरीदारी (Purchase)', hint_pur:'आज माल या सामान कितने का खरीदा',
+ cat_home:'घर ले गए', hint_home:'दुकान से घर कितने रुपये ले गए',
+ phAmt:'रकम (₹)', phNote:'नोट (ज़रूरी नहीं)', phNote_exp:'किसे दिया / किस काम में (ज़रूरी नहीं)', phNote_pur:'क्या-क्या खरीदा (ज़रूरी नहीं)',
+ add:'जोड़ें', close:'बंद करें', del:'हटाएं', delSure:'पक्का हटाएं?', noEntry:'अभी कुछ नहीं लिखा',
+ needAmt:'पहले रकम लिखें', added:'सेव हो गया', removed:'हटा दिया',
+ sumToday:'आज का हिसाब', sumDay:'इस दिन का हिसाब',
+ kBill:'बिल से बिक्री', kManual:'बिना-बिल बिक्री', kSale:'कुल बिक्री', kPur:'खरीदारी', kExp:'खर्चा',
+ kProfit:'मुनाफ़ा', kLoss:'नुकसान', kOpen:'घर से लिए', kHome:'घर ले गए', kCash:'गल्ले में बचा',
+ kCashHint:'घर से लिए + बिक्री − खरीदारी − खर्चा − घर ले गए',
+ dayBills:'इस दिन के बिल', itemsN:'सामान',
+ bNew:'नया बिल', bCust:'ग्राहक का नाम (ज़रूरी नहीं)', bQuick:'सेव किया सामान — छूकर जोड़ें',
+ bName:'सामान का नाम', bQty:'मात्रा', bPrice:'भाव (₹)', bAddLine:'बिल में जोड़ें',
+ bEmpty:'बिल में अभी कुछ नहीं. ऊपर से सामान छुएं या नाम लिखें.',
+ bDisc:'छूट (₹)', bSub:'जोड़', bTotal:'कुल', bSave:'बिल सेव करें', bClear:'साफ़ करें',
+ bSaved:'बिल सेव हो गया', bToday:'आज के बिल', bNone:'अभी कोई बिल नहीं',
+ bWa:'WhatsApp पर भेजें', bCopy:'कॉपी करें', bCopied:'कॉपी हो गया', bCopyFail:'कॉपी नहीं हुआ',
+ bAuto:'नया सामान सेव हो गया', bNoName:'सामान का नाम लिखें', bNoPrice:'भाव लिखें',
+ bNoItems:'बिल में कम से कम एक सामान जोड़ें', bThanks:'धन्यवाद! फिर पधारें 🙏',
+ bNo:'बिल', bCustL:'ग्राहक', bDel:'बिल हटाएं',
+ bQuickNone:'अभी कोई सामान सेव नहीं. नीचे नाम और भाव लिखकर जोड़ेंगे तो अपने-आप सेव हो जाएगा.',
+ rMonth:'महीना', rYear:'साल', rDate:'तारीख', rSale:'बिक्री', rCost:'खर्च', rProfit:'मुनाफ़ा',
+ rMonthSum:'का हिसाब', rNone:'इस समय की कोई एंट्री नहीं', rTap:'तारीख छूकर उस दिन का हिसाब खोलें. खर्च = खरीदारी + खर्चा.',
+ rDays:'दिन की एंट्री', rTotal:'कुल', rPrev:'पिछला', rNext:'अगला',
+ iTitle:'सेव किया हुआ सामान', iAdd:'नया सामान जोड़ें', iNone:'अभी कोई सामान सेव नहीं. बिल बनाते समय नया सामान अपने-आप सेव हो जाएगा.',
+ iName:'सामान का नाम', iPrice:'भाव (₹)', iAddBtn:'सामान सेव करें', iNeed:'नाम और भाव दोनों लिखें', iPriceSaved:'भाव सेव हो गया',
+ stTitle:'सेटिंग', stShop:'दुकान का नाम', stPhone:'फ़ोन नंबर (बिल पर दिखेगा)', stLang:'भाषा', stStore:'हिसाब कहाँ सेव है',
+ stDb:'आपके Claude खाते में सुरक्षित है. उसी खाते से किसी भी फ़ोन पर खोलें, हिसाब वही दिखेगा.',
+ stLocal:'सिर्फ़ इसी फ़ोन के ब्राउज़र में सेव है. ब्राउज़र का डेटा मिटाने पर हिसाब चला जाएगा, इसलिए बैकअप लेते रहें.',
+ stMem:'इस फ़ोन पर सेव नहीं हो पा रहा. नीचे से बैकअप ज़रूर लें.',
+ bkBtn:'बैकअप फ़ाइल सेव करें', rsBtn:'बैकअप फ़ाइल से हिसाब वापस लाएं',
+ bkDone:'बैकअप सेव हो गया', bkFail:'बैकअप नहीं बन पाया', rsDone:'हिसाब वापस आ गया', rsBad:'ये फ़ाइल सही नहीं है', rsMore:'वापस ला रहे हैं, थोड़ा रुकें…',
+ badgeDb:'सुरक्षित सेव', badgeLocal:'सिर्फ़ फ़ोन में', badgeMem:'सेव नहीं हो रहा',
+ errSave:'सेव नहीं हो पाया. फिर कोशिश करें', migrated:'पुराना हिसाब सुरक्षित जगह पहुँच गया'
+},
+hl:{
+ shopDef:'Meri Dukaan', loading:'Khul raha hai…',
+ nDay:'Hisaab', nBill:'Bill', nRep:'Report', nItems:'Saaman',
+ today:'Aaj', toToday:'Aaj par jaayein', prevDay:'Pichhla din', nextDay:'Agla din', pickDate:'Tareekh chunein',
+ cat_open:'Ghar se liye', hint_open:'Dukaan ke liye ghar se kitne rupaye lekar nikle',
+ cat_exp:'Kharcha', hint_exp:'Kiraya, mazdoori, bijli, chai-paani… kisko kitna diya',
+ cat_sale:'Bina-bill ki sale', hint_sale:'Jo sale bill me nahi likhi, wo yahan jodein. Bill wali sale apne-aap jud jaati hai',
+ cat_pur:'Purchase (khareedari)', hint_pur:'Aaj maal ya saaman kitne ka khareeda',
+ cat_home:'Ghar le gaye', hint_home:'Dukaan se ghar kitne rupaye le gaye',
+ phAmt:'Rakam (₹)', phNote:'Note (zaroori nahi)', phNote_exp:'Kisko diya / kis kaam me (zaroori nahi)', phNote_pur:'Kya-kya khareeda (zaroori nahi)',
+ add:'Jodein', close:'Band karein', del:'Hatayein', delSure:'Pakka hatayein?', noEntry:'Abhi kuch nahi likha',
+ needAmt:'Pehle rakam likhein', added:'Save ho gaya', removed:'Hata diya',
+ sumToday:'Aaj ka hisaab', sumDay:'Is din ka hisaab',
+ kBill:'Bill se sale', kManual:'Bina-bill sale', kSale:'Kul sale', kPur:'Purchase', kExp:'Kharcha',
+ kProfit:'Munafa', kLoss:'Nuksaan', kOpen:'Ghar se liye', kHome:'Ghar le gaye', kCash:'Galle me bacha',
+ kCashHint:'Ghar se liye + sale − purchase − kharcha − ghar le gaye',
+ dayBills:'Is din ke bill', itemsN:'saaman',
+ bNew:'Naya bill', bCust:'Customer ka naam (zaroori nahi)', bQuick:'Saved saaman — chhoo kar jodein',
+ bName:'Saaman ka naam', bQty:'Matra', bPrice:'Bhaav (₹)', bAddLine:'Bill me jodein',
+ bEmpty:'Bill me abhi kuch nahi. Upar se saaman chhuein ya naam likhein.',
+ bDisc:'Chhoot (₹)', bSub:'Jod', bTotal:'Kul', bSave:'Bill save karein', bClear:'Saaf karein',
+ bSaved:'Bill save ho gaya', bToday:'Aaj ke bill', bNone:'Abhi koi bill nahi',
+ bWa:'WhatsApp par bhejein', bCopy:'Copy karein', bCopied:'Copy ho gaya', bCopyFail:'Copy nahi hua',
+ bAuto:'Naya saaman save ho gaya', bNoName:'Saaman ka naam likhein', bNoPrice:'Bhaav likhein',
+ bNoItems:'Bill me kam se kam ek saaman jodein', bThanks:'Dhanyavaad! Phir padharein 🙏',
+ bNo:'Bill', bCustL:'Customer', bDel:'Bill hatayein',
+ bQuickNone:'Abhi koi saaman save nahi. Neeche naam aur bhaav likhkar jodenge to apne-aap save ho jaayega.',
+ rMonth:'Mahina', rYear:'Saal', rDate:'Tareekh', rSale:'Sale', rCost:'Kharch', rProfit:'Munafa',
+ rMonthSum:'ka hisaab', rNone:'Is samay ki koi entry nahi', rTap:'Tareekh chhookar us din ka hisaab kholein. Kharch = purchase + kharcha.',
+ rDays:'din ki entry', rTotal:'Kul', rPrev:'Pichhla', rNext:'Agla',
+ iTitle:'Saved saaman', iAdd:'Naya saaman jodein', iNone:'Abhi koi saaman save nahi. Bill banate samay naya saaman apne-aap save ho jaayega.',
+ iName:'Saaman ka naam', iPrice:'Bhaav (₹)', iAddBtn:'Saaman save karein', iNeed:'Naam aur bhaav dono likhein', iPriceSaved:'Bhaav save ho gaya',
+ stTitle:'Setting', stShop:'Dukaan ka naam', stPhone:'Phone number (bill par dikhega)', stLang:'Bhasha', stStore:'Hisaab kahan save hai',
+ stDb:'Aapke Claude account me surakshit hai. Usi account se kisi bhi phone par kholein, hisaab wahi dikhega.',
+ stLocal:'Sirf isi phone ke browser me save hai. Browser ka data mitane par hisaab chala jaayega, isliye backup lete rahein.',
+ stMem:'Is phone par save nahi ho pa raha. Neeche se backup zaroor lein.',
+ bkBtn:'Backup file save karein', rsBtn:'Backup file se hisaab wapas laayein',
+ bkDone:'Backup save ho gaya', bkFail:'Backup nahi ban paya', rsDone:'Hisaab wapas aa gaya', rsBad:'Ye file sahi nahi hai', rsMore:'Wapas la rahe hain, thoda rukein…',
+ badgeDb:'Surakshit save', badgeLocal:'Sirf phone me', badgeMem:'Save nahi ho raha',
+ errSave:'Save nahi ho paya. Phir koshish karein', migrated:'Purana hisaab surakshit jagah pahunch gaya'
+}};
+let lang = 'hi';
+const t = k => { const s = STR[lang]; return (s && s[k] != null) ? s[k] : (STR.hi[k] != null ? STR.hi[k] : k); };
+const loc = () => lang === 'hi' ? 'hi-IN' : 'en-IN';
+
+/* ===== छोटे काम के फ़ंक्शन ===== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(/,/g, '')); return isFinite(x) ? x : 0; };
+const r2 = x => Math.round((x + Number.EPSILON) * 100) / 100;
+const money = x => '₹' + r2(x).toLocaleString('en-IN', {maximumFractionDigits: 2});
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parseYmd = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const TODAY = () => ymd(new Date());
+const clone = o => JSON.parse(JSON.stringify(o));
+const sum = a => r2(a.reduce((s, x) => s + num(x.amt), 0));
+const qtyStr = q => String(r2(q));
+
+/* ===== डेटा ===== */
+const CATS = ['open', 'exp', 'sale', 'pur', 'home'];
+const emptyDay = () => ({open: [], exp: [], sale: [], pur: [], home: [], bills: []});
+const normMeta = m => ({
+  shop: (m && m.shop) || '', phone: (m && m.phone) || '', lang: (m && m.lang) || 'hi',
+  items: Array.isArray(m && m.items) ? m.items.filter(i => i && i.n).map(i => ({n: String(i.n), p: num(i.p), c: num(i.c)})) : []
+});
+const normDay = d => {
+  const o = emptyDay();
+  CATS.forEach(k => { o[k] = Array.isArray(d && d[k]) ? d[k].map(e => ({id: e.id || uid(), amt: num(e.amt), note: e.note || ''})) : []; });
+  o.bills = Array.isArray(d && d.bills) ? d.bills.filter(b => b && Array.isArray(b.lines)).map(b => ({
+    id: b.id || uid(), no: num(b.no) || 1, ts: num(b.ts) || Date.now(), cust: b.cust || '',
+    lines: b.lines.map(l => ({n: String(l.n), q: num(l.q), p: num(l.p)})), disc: num(b.disc), total: num(b.total)
+  })) : [];
+  return o;
+};
+const state = { meta: normMeta(null), days: {} };
+const ensureDay = d => state.days[d] || (state.days[d] = emptyDay());
+const findIdx = name => { const n = name.trim().toLowerCase(); return state.meta.items.findIndex(i => i.n.toLowerCase() === n); };
+
+function totals(d) {
+  const z = {sale: 0, billSale: 0, manual: 0, pur: 0, exp: 0, open: 0, home: 0, profit: 0, cash: 0, nb: 0, any: false};
+  const D = state.days[d];
+  if (!D) return z;
+  z.billSale = r2(D.bills.reduce((s, b) => s + num(b.total), 0));
+  z.manual = sum(D.sale);
+  z.sale = r2(z.billSale + z.manual);
+  z.pur = sum(D.pur); z.exp = sum(D.exp); z.open = sum(D.open); z.home = sum(D.home);
+  z.profit = r2(z.sale - z.pur - z.exp);
+  z.cash = r2(z.open + z.sale - z.pur - z.exp - z.home);
+  z.nb = D.bills.length;
+  z.any = !!(D.bills.length || CATS.some(k => D[k].length));
+  return z;
+}
+function agg(prefix) {
+  const r = {sale: 0, pur: 0, exp: 0, open: 0, home: 0, n: 0, profit: 0};
+  Object.keys(state.days).forEach(d => {
+    if (d.indexOf(prefix) !== 0) return;
+    const x = totals(d);
+    if (!x.any) return;
+    r.sale += x.sale; r.pur += x.pur; r.exp += x.exp; r.open += x.open; r.home += x.home; r.n++;
+  });
+  ['sale', 'pur', 'exp', 'open', 'home'].forEach(k => r[k] = r2(r[k]));
+  r.profit = r2(r.sale - r.pur - r.exp);
+  return r;
+}
+
+/* ===== सेव करने का तरीका: Claude खाता (db) या फ़ोन (localStorage) ===== */
+const Store = {
+  mode: 'local', col: null, q: Promise.resolve(), migrated: false,
+  async init() {
+    let db = null, id = null;
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        const probe = (async () => {
+          const d = await window.claude.use('db');
+          const u = await window.claude.use('user');
+          const i = (d && u) ? await u.id() : null;
+          return {d, i};
+        })();
+        const res = await Promise.race([probe, new Promise(r => setTimeout(() => r(null), 6000))]);
+        if (res && res.d && res.i) { db = res.d; id = res.i; }
+      }
+    } catch (e) { console.warn(e); }
+    if (db && id) {
+      try {
+        this.col = db.collection('data/users/' + id);
+        await this.loadDb();
+        this.mode = 'db';
+        return;
+      } catch (e) { console.error(e); this.col = null; }
+    }
+    try { localStorage.setItem(KEY + '_t', '1'); localStorage.removeItem(KEY + '_t'); this.mode = 'local'; }
+    catch (e) { this.mode = 'memory'; }
+    const loc = this.readLocal();
+    if (loc) { state.meta = normMeta(loc.meta); state.days = {}; Object.keys(loc.days || {}).forEach(d => state.days[d] = normDay(loc.days[d])); }
+  },
+  readLocal() { try { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } },
+  saveLocal() {
+    if (this.mode !== 'local') return;
+    try { localStorage.setItem(KEY, JSON.stringify({meta: state.meta, days: state.days})); }
+    catch (e) { toast(t('errSave'), true); }
+  },
+  async loadDb() {
+    const snap = await this.col.get();
+    const days = {}; let meta = null;
+    snap.docs.forEach(d => {
+      const data = d.data();
+      if (!data) return;
+      if (d.id === 'meta') meta = data;
+      else if (d.id.indexOf('d_') === 0) days[d.id.slice(2)] = normDay(data);
+    });
+    if (!meta && !Object.keys(days).length) {
+      const loc = this.readLocal();
+      if (loc && loc.days && (Object.keys(loc.days).length || (loc.meta && loc.meta.items && loc.meta.items.length))) {
+        state.meta = normMeta(loc.meta); state.days = {};
+        Object.keys(loc.days).forEach(d => state.days[d] = normDay(loc.days[d]));
+        this.migrated = true;
+        this.mode = 'db';
+        this.saveAll();
+        return;
+      }
+      state.meta = normMeta(null); state.days = {};
+    } else { state.meta = normMeta(meta); state.days = days; }
+  },
+  enqueue(job) {
+    this.q = this.q.then(job).catch(e => { console.error(e); toast(t('errSave'), true); });
+    return this.q;
+  },
+  async retry(fn) {
+    for (let i = 0; i < 4; i++) {
+      try { return await fn(); }
+      catch (e) {
+        const c = e && e.code;
+        if (i < 3 && (c === 'unavailable' || c === 'resource_exhausted')) { await new Promise(r => setTimeout(r, 700 * (i + 1))); continue; }
+        throw e;
+      }
+    }
+  },
+  saveDay(d) {
+    if (this.mode === 'db') {
+      const body = Object.assign({date: d}, clone(state.days[d]));
+      this.enqueue(() => this.retry(() => this.col.doc('d_' + d).set(body)));
+    } else this.saveLocal();
+  },
+  saveMeta() {
+    if (this.mode === 'db') {
+      const body = clone(state.meta);
+      this.enqueue(() => this.retry(() => this.col.doc('meta').set(body)));
+    } else this.saveLocal();
+  },
+  saveAll() {
+    if (this.mode !== 'db') { this.saveLocal(); return Promise.resolve(); }
+    const metaBody = clone(state.meta);
+    const days = Object.keys(state.days).map(d => [d, Object.assign({date: d}, clone(state.days[d]))]);
+    return this.enqueue(async () => {
+      await this.retry(() => this.col.doc('meta').set(metaBody));
+      for (const [d, body] of days) await this.retry(() => this.col.doc('d_' + d).set(body));
+    });
+  }
+};
+
+/* ===== स्क्रीन की हालत ===== */
+const now = new Date();
+const ui = {
+  ready: false, tab: 'day', date: TODAY(), open: null, del: null, focus: null, last: null,
+  repMode: 'month', repYm: TODAY().slice(0, 7), repY: now.getFullYear(),
+  draft: {cust: '', lines: [], disc: ''}, expand: null
+};
+let delTimer = null, toastTimer = null;
+
+function toast(msg, isErr) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast on' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = 'toast'; }, 2400);
+}
+
+/* ===== स्क्रीन बनाना ===== */
+const ICON = {
+  day: '<svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4z"/><path d="M8 4v13M11 9h5M11 13h5"/></svg>',
+  bill: '<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>',
+  rep: '<svg viewBox="0 0 24 24"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>',
+  items: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>'
+};
+
+function snapshot() {
+  const m = {};
+  document.querySelectorAll('#view input[id]').forEach(el => {
+    if (/^(f_|b_|i_)/.test(el.id)) m[el.id] = el.value;
+  });
+  const ae = document.activeElement;
+  m.__focus = (ae && ae.id && /^(f_|b_|i_)/.test(ae.id)) ? ae.id : null;
+  return m;
+}
+function restore(m) {
+  Object.keys(m).forEach(k => {
+    if (k === '__focus') return;
+    const el = $(k);
+    if (el) el.value = m[k];
+  });
+  if (m.__focus && !ui.focus) ui.focus = m.__focus;
+}
+
+function render(opts) {
+  const fresh = !!(opts && opts.fresh);
+  document.documentElement.lang = lang === 'hi' ? 'hi' : 'hi-Latn';
+  $('shop').textContent = state.meta.shop || t('shopDef');
+  const b = $('badge');
+  const mode = Store.mode;
+  b.textContent = mode === 'db' ? t('badgeDb') : mode === 'local' ? t('badgeLocal') : t('badgeMem');
+  b.className = 'pill' + (mode === 'db' ? '' : ' warn');
+  $('nav').innerHTML = [['day', 'nDay'], ['bill', 'nBill'], ['rep', 'nRep'], ['items', 'nItems']].map(x =>
+    `<button data-a="tab" data-t="${x[0]}" ${ui.tab === x[0] ? 'aria-current="page"' : ''}>${ICON[x[0]]}<span>${t(x[1])}</span></button>`).join('');
+  const view = $('view');
+  if (!ui.ready) { view.innerHTML = `<p class="loading">${t('loading')}</p>`; return; }
+  const keep = !fresh && ui.last === ui.tab;
+  const snap = keep ? snapshot() : null;
+  const html = ui.tab === 'day' ? renderDay() : ui.tab === 'bill' ? renderBill() : ui.tab === 'rep' ? renderRep() : renderItems();
+  view.innerHTML = html;
+  ui.last = ui.tab;
+  if (snap) restore(snap);
+  if (ui.focus) {
+    const el = $(ui.focus);
+    if (el) { try { el.focus(); } catch (e) {} }
+    ui.focus = null;
+  }
+}
+
+function ledger(title, r, mode) {
+  const row = (label, val, cls, tone) => `<div class="kh ${cls || ''}"><span class="l">${label}</span><i class="lead"></i><b class="${tone || ''}">${val}</b></div>`;
+  let h = `<section class="khata"><h2>${esc(title)}</h2>`;
+  if (mode === 'day') {
+    h += row(t('kBill'), money(r.billSale), 'sub') + row(t('kManual'), money(r.manual), 'sub');
+  }
+  h += row(t('kSale'), money(r.sale)) + row(t('kPur'), '− ' + money(r.pur)) + row(t('kExp'), '− ' + money(r.exp));
+  const good = r.profit >= 0;
+  h += `<div class="kh res ${good ? 'good' : 'bad'}"><span class="l">${good ? t('kProfit') : t('kLoss')}</span><i class="lead"></i><b class="${good ? 'good' : 'bad'}">${money(Math.abs(r.profit))}</b></div>`;
+  h += row(t('kOpen'), money(r.open), 'cut') + row(t('kHome'), money(r.home));
+  if (mode === 'day') {
+    h += row(t('kCash'), money(r.cash)) + `<p class="fine">${t('kCashHint')}</p>`;
+  }
+  return h + '</section>';
+}
+
+function entryRow(k, e) {
+  const armed = ui.del === k + ':' + e.id;
+  return `<li><span class="nt ${e.note ? '' : 'none'}">${e.note ? esc(e.note) : '—'}</span><span class="am">${money(e.amt)}</span>` +
+    `<button class="x ${armed ? 'armed' : ''}" data-a="del" data-k="${k}" data-id="${e.id}" aria-label="${t('del')}">${armed ? t('delSure') : '✕'}</button></li>`;
+}
+
+function section(k, D) {
+  const list = D[k];
+  const isOpen = ui.open === k;
+  const ph = t('phNote_' + k) !== 'phNote_' + k ? t('phNote_' + k) : t('phNote');
+  let h = `<section class="blk"><div class="blk-h"><div><h3>${t('cat_' + k)}</h3><p class="hint">${t('hint_' + k)}</p></div><div class="blk-t">${money(sum(list))}</div></div>`;
+  h += `<ul class="ent">${list.map(e => entryRow(k, e)).join('') || `<li class="empty">${t('noEntry')}</li>`}</ul>`;
+  if (isOpen) {
+    h += `<div class="form"><input class="in" id="f_amt" type="number" inputmode="decimal" step="any" min="0" placeholder="${t('phAmt')}" aria-label="${t('phAmt')}">` +
+      `<input class="in" id="f_note" type="text" placeholder="${esc(ph)}" aria-label="${esc(ph)}" autocomplete="off">` +
+      `<div class="frow"><button class="btn primary" data-a="addentry" data-k="${k}">${t('add')}</button><button class="btn ghost" data-a="closeform">${t('close')}</button></div></div>`;
+  } else {
+    h += `<button class="add" data-a="openform" data-k="${k}">+ ${t('add')}</button>`;
+  }
+  return h + '</section>';
+}
+
+function renderDay() {
+  const d = ui.date, D = state.days[d] || emptyDay(), r = totals(d);
+  const dt = parseYmd(d), isToday = d === TODAY();
+  const lab = dt.toLocaleDateString(loc(), {weekday: 'long', day: 'numeric', month: 'long'});
+  const yr = dt.getFullYear();
+  let h = `<div class="datebar"><button class="ic" data-a="dprev" aria-label="${t('prevDay')}">‹</button>` +
+    `<label class="datepick"><span class="dl">${esc(lab)}</span><span class="dsub">${isToday ? t('today') + ', ' : ''}${yr}</span>` +
+    `<input type="date" id="dpick" value="${d}" max="${TODAY()}" aria-label="${t('pickDate')}"></label>` +
+    `<button class="ic" data-a="dnext" aria-label="${t('nextDay')}" ${d >= TODAY() ? 'disabled' : ''}>›</button></div>`;
+  if (!isToday) h += `<button class="tolink" data-a="dtoday">${t('toToday')}</button>`;
+  h += ledger(isToday ? t('sumToday') : t('sumDay'), r, 'day');
+  CATS.forEach(k => { h += section(k, D); });
+  h += `<section class="blk"><div class="blk-h"><div><h3>${t('dayBills')}</h3></div><div class="blk-t">${money(r.billSale)}</div></div>`;
+  h += D.bills.length ? D.bills.slice().reverse().map(b => billRow(d, b)).join('') : `<p class="hint">${t('bNone')}</p>`;
+  return h + '</section>';
+}
+
+/* ----- बिल ----- */
+const draftSub = () => r2(ui.draft.lines.reduce((s, l) => s + l.q * l.p, 0));
+const draftDisc = () => Math.min(Math.max(num(ui.draft.disc), 0), draftSub());
+
+function billText(date, b) {
+  const L = [];
+  L.push('*' + (state.meta.shop || t('shopDef')) + '*');
+  if (state.meta.phone) L.push('📞 ' + state.meta.phone);
+  const when = parseYmd(date).toLocaleDateString(loc(), {day: 'numeric', month: 'short', year: 'numeric'}) + ' ' +
+    new Date(b.ts).toLocaleTimeString(loc(), {hour: 'numeric', minute: '2-digit'});
+  L.push(t('bNo') + ' #' + b.no + '  ' + when);
+  if (b.cust) L.push(t('bCustL') + ': ' + b.cust);
+  L.push('------------------');
+  b.lines.forEach(l => L.push(l.n + '  ' + qtyStr(l.q) + ' × ' + money(l.p) + ' = ' + money(l.q * l.p)));
+  L.push('------------------');
+  if (b.disc > 0) { L.push(t('bSub') + ': ' + money(b.total + b.disc)); L.push(t('bDisc') + ': − ' + money(b.disc)); }
+  L.push('*' + t('bTotal') + ': ' + money(b.total) + '*');
+  L.push(t('bThanks'));
+  return L.join('\n');
+}
+
+function billRow(date, b) {
+  const open = ui.expand === b.id;
+  const tm = new Date(b.ts).toLocaleTimeString(loc(), {hour: 'numeric', minute: '2-digit'});
+  let h = `<div class="brow"><button data-a="btoggle" data-id="${b.id}" aria-expanded="${open}">` +
+    `<span class="bno">#${b.no}</span><span class="bmid">${esc(b.cust || '—')}<small>${tm}, ${b.lines.length} ${t('itemsN')}</small></span>` +
+    `<b>${money(b.total)}</b><span class="chev">${open ? '▴' : '▾'}</span></button>`;
+  if (open) {
+    const armed = ui.del === 'bill:' + b.id;
+    h += `<div class="bdet"><ul>${b.lines.map(l => `<li><span>${esc(l.n)}, ${qtyStr(l.q)} × ${money(l.p)}</span><span>${money(l.q * l.p)}</span></li>`).join('')}` +
+      (b.disc > 0 ? `<li><span>${t('bDisc')}</span><span>− ${money(b.disc)}</span></li>` : '') + `</ul>` +
+      `<div class="frow"><a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${encodeURIComponent(billText(date, b))}">${t('bWa')}</a>` +
+      `<button class="btn" data-a="copybill" data-d="${date}" data-id="${b.id}">${t('bCopy')}</button></div>` +
+      `<button class="btn danger wide" data-a="del" data-k="bill" data-d="${date}" data-id="${b.id}">${armed ? t('delSure') : t('bDel')}</button></div>`;
+  }
+  return h + '</div>';
+}
+
+function linesHtml() {
+  const L = ui.draft.lines;
+  if (!L.length) return `<p class="hint">${t('bEmpty')}</p>`;
+  return `<ul class="lines">${L.map((l, j) => `<li><div class="ln">${esc(l.n)}<small>${money(l.p)}</small></div>` +
+    `<div class="step"><button data-a="qminus" data-j="${j}" aria-label="−">−</button><span>${qtyStr(l.q)}</span><button data-a="qplus" data-j="${j}" aria-label="+">+</button></div>` +
+    `<b>${money(l.q * l.p)}</b><button class="x" data-a="lrm" data-j="${j}" aria-label="${t('del')}">✕</button></li>`).join('')}</ul>`;
+}
+
+function renderBill() {
+  const dr = ui.draft, items = state.meta.items;
+  const order = items.map((_, i) => i).sort((a, b) => (items[b].c || 0) - (items[a].c || 0)).slice(0, 30);
+  const chips = order.length
+    ? `<div class="chips">${order.map(i => `<button class="chip" data-a="chip" data-i="${i}">${esc(items[i].n)}<small>${money(items[i].p)}</small></button>`).join('')}</div>`
+    : `<p class="hint">${t('bQuickNone')}</p>`;
+  const sub = draftSub(), total = r2(sub - draftDisc());
+  const todayBills = (state.days[TODAY()] || emptyDay()).bills;
+  return `<h2 class="pg">${t('bNew')}</h2>
+  <div class="stack">
+    <div><label class="lbl" for="b_cust">${t('bCust')}</label><input class="in" id="b_cust" type="text" autocomplete="off" value="${esc(dr.cust)}"></div>
+    <div><p class="lbl">${t('bQuick')}</p>${chips}</div>
+    <div class="form">
+      <div><label class="lbl" for="b_name">${t('bName')}</label><input class="in" id="b_name" type="text" autocomplete="off"><div class="sug" id="sug"></div></div>
+      <div class="two">
+        <div><label class="lbl" for="b_qty">${t('bQty')}</label><input class="in" id="b_qty" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
+        <div><label class="lbl" for="b_price">${t('bPrice')}</label><input class="in" id="b_price" type="number" inputmode="decimal" step="any" min="0"></div>
+      </div>
+      <button class="btn primary wide" data-a="addline">+ ${t('bAddLine')}</button>
+    </div>
+    <div id="lines">${linesHtml()}</div>
+    <div class="two">
+      <div><label class="lbl" for="b_disc">${t('bDisc')}</label><input class="in" id="b_disc" type="number" inputmode="decimal" step="any" min="0" value="${esc(dr.disc)}"></div>
+      <div><p class="lbl">${t('bSub')}</p><p style="margin:10px 0 0;font:600 18px var(--head)" id="b_sub">${money(sub)}</p></div>
+    </div>
+    <div class="tot"><span>${t('bTotal')}</span><big id="b_total">${money(total)}</big></div>
+    <div class="frow"><button class="btn primary" data-a="savebill">${t('bSave')}</button><button class="btn ghost" data-a="clearbill">${t('bClear')}</button></div>
+  </div>
+  <section class="blk" style="margin-top:20px"><div class="blk-h"><div><h3>${t('bToday')}</h3></div><div class="blk-t">${money(totals(TODAY()).billSale)}</div></div>
+  ${todayBills.length ? todayBills.slice().reverse().map(b => billRow(TODAY(), b)).join('') : `<p class="hint">${t('bNone')}</p>`}</section>`;
+}
+
+function refreshLines() {
+  const el = $('lines'); if (el) el.innerHTML = linesHtml();
+  const s = $('b_sub'), tt = $('b_total');
+  if (s) s.textContent = money(draftSub());
+  if (tt) tt.textContent = money(r2(draftSub() - draftDisc()));
+}
+
+/* ----- रिपोर्ट ----- */
+function renderRep() {
+  const mode = ui.repMode;
+  let h = `<div class="seg"><button data-a="repmode" data-m="month" aria-pressed="${mode === 'month'}">${t('rMonth')}</button><button data-a="repmode" data-m="year" aria-pressed="${mode === 'year'}">${t('rYear')}</button></div>`;
+  let label, prefix;
+  if (mode === 'month') {
+    const p = ui.repYm.split('-').map(Number);
+    label = new Date(p[0], p[1] - 1, 1).toLocaleDateString(loc(), {month: 'long', year: 'numeric'});
+    prefix = ui.repYm;
+    h += `<div class="datebar"><button class="ic" data-a="repprev" aria-label="${t('rPrev')}">‹</button><div class="datepick"><span class="dl">${esc(label)}</span></div><button class="ic" data-a="repnext" aria-label="${t('rNext')}" ${ui.repYm >= TODAY().slice(0, 7) ? 'disabled' : ''}>›</button></div>`;
+  } else {
+    label = String(ui.repY); prefix = label;
+    h += `<div class="datebar"><button class="ic" data-a="repprev" aria-label="${t('rPrev')}">‹</button><div class="datepick"><span class="dl">${label}</span></div><button class="ic" data-a="repnext" aria-label="${t('rNext')}" ${ui.repY >= now.getFullYear() ? 'disabled' : ''}>›</button></div>`;
+  }
+  const r = agg(prefix);
+  h += ledger(label + ' ' + t('rMonthSum'), r, 'period');
+  h += `<p class="fine">${r.n} ${t('rDays')}</p>`;
+  const head = `<div class="trow head"><span>${t('rDate')}</span><span>${t('rSale')}</span><span>${t('rCost')}</span><span>${t('rProfit')}</span></div>`;
+  const cell = x => `<b class="${x.profit >= 0 ? 'good' : 'bad'}">${x.profit < 0 ? '−' : ''}${money(Math.abs(x.profit))}</b>`;
+  let rows = '';
+  if (mode === 'month') {
+    const days = Object.keys(state.days).filter(d => d.indexOf(prefix) === 0 && totals(d).any).sort();
+    rows = days.map(d => {
+      const x = totals(d);
+      const dl = parseYmd(d).toLocaleDateString(loc(), {day: 'numeric', month: 'short', weekday: 'short'});
+      return `<button class="trow" data-a="gotoday" data-d="${d}"><span>${esc(dl)}</span><span>${money(x.sale)}</span><span>${money(x.pur + x.exp)}</span>${cell(x)}</button>`;
+    }).join('');
+  } else {
+    for (let m = 1; m <= 12; m++) {
+      const pre = ui.repY + '-' + pad(m), x = agg(pre);
+      const ml = new Date(ui.repY, m - 1, 1).toLocaleDateString(loc(), {month: 'long'});
+      rows += x.n
+        ? `<button class="trow" data-a="gomonth" data-ym="${pre}"><span>${esc(ml)}</span><span>${money(x.sale)}</span><span>${money(x.pur + x.exp)}</span>${cell(x)}</button>`
+        : `<div class="trow dim"><span>${esc(ml)}</span><span>—</span><span>—</span><span>—</span></div>`;
+    }
+  }
+  if (!rows) rows = `<p class="hint" style="margin-top:12px">${t('rNone')}</p>`;
+  h += `<div class="tbl">${head}${rows}`;
+  if (r.n) h += `<div class="trow foot"><span>${t('rTotal')}</span><span>${money(r.sale)}</span><span>${money(r.pur + r.exp)}</span>${cell(r)}</div>`;
+  return h + `</div><p class="note">${t('rTap')}</p>`;
+}
+
+/* ----- सामान और सेटिंग ----- */
+function renderItems() {
+  const items = state.meta.items.map((it, i) => ({n: it.n, p: it.p, i})).sort((a, b) => a.n.localeCompare(b.n));
+  const mode = Store.mode;
+  let h = `<h2 class="pg">${t('iTitle')}</h2>
+  <div class="form"><div><label class="lbl" for="i_name">${t('iName')}</label><input class="in" id="i_name" type="text" autocomplete="off"></div>
+  <div><label class="lbl" for="i_price">${t('iPrice')}</label><input class="in" id="i_price" type="number" inputmode="decimal" step="any" min="0"></div>
+  <button class="btn primary wide" data-a="additem">+ ${t('iAddBtn')}</button></div>`;
+  h += items.length
+    ? `<ul class="items">${items.map(it => {
+        const armed = ui.del === 'item:' + it.i;
+        return `<li><span class="ln">${esc(it.n)}</span><input class="in" type="number" inputmode="decimal" step="any" min="0" value="${it.p}" data-ch="itemprice" data-i="${it.i}" aria-label="${t('iPrice')}">` +
+          `<button class="x ${armed ? 'armed' : ''}" data-a="del" data-k="item" data-id="${it.i}" aria-label="${t('del')}">${armed ? t('delSure') : '✕'}</button></li>`;
+      }).join('')}</ul>`
+    : `<p class="hint" style="margin:10px 0">${t('iNone')}</p>`;
+  h += `<h2 class="pg" style="margin-top:26px">${t('stTitle')}</h2>
+  <div class="setrow"><label class="lbl" for="s_shop">${t('stShop')}</label><input class="in" id="s_shop" type="text" data-ch="shop" value="${esc(state.meta.shop)}" placeholder="${t('shopDef')}"></div>
+  <div class="setrow"><label class="lbl" for="s_phone">${t('stPhone')}</label><input class="in" id="s_phone" type="tel" inputmode="tel" data-ch="phone" value="${esc(state.meta.phone)}"></div>
+  <div class="setrow"><p class="lbl">${t('stLang')}</p><div class="seg" style="margin:0"><button data-a="lang" data-l="hi" aria-pressed="${lang === 'hi'}">हिंदी</button><button data-a="lang" data-l="hl" aria-pressed="${lang === 'hl'}">Hinglish</button></div></div>
+  <div class="setrow"><p class="lbl">${t('stStore')}</p><p class="note" style="margin:0">${mode === 'db' ? t('stDb') : mode === 'local' ? t('stLocal') : t('stMem')}</p></div>
+  <div class="stack"><button class="btn wide" data-a="backup">${t('bkBtn')}</button>
+  <label class="btn wide" for="restoreFile" style="cursor:pointer">${t('rsBtn')}</label><input type="file" id="restoreFile" accept=".json,application/json" hidden></div>`;
+  return h;
+}
+
+/* ===== बटन दबाने पर क्या हो ===== */
+const A = {
+  tab(el) { ui.tab = el.dataset.t; ui.open = null; ui.del = null; render({fresh: true}); window.scrollTo(0, 0); },
+  dprev() { shiftDay(-1); },
+  dnext() { shiftDay(1); },
+  dtoday() { ui.date = TODAY(); ui.open = null; render({fresh: true}); },
+  openform(el) { ui.open = el.dataset.k; ui.focus = 'f_amt'; render({fresh: true}); },
+  closeform() { ui.open = null; render({fresh: true}); },
+  addentry(el) {
+    const k = el.dataset.k, amt = num($('f_amt').value), note = $('f_note').value.trim();
+    if (!(amt > 0)) { toast(t('needAmt'), true); $('f_amt').focus(); return; }
+    const D = ensureDay(ui.date);
+    D[k].push({id: uid(), amt: r2(amt), note});
+    Store.saveDay(ui.date);
+    ui.focus = 'f_amt';
+    toast(t('added'));
+    render({fresh: true});
+  },
+  del(el) {
+    const k = el.dataset.k, id = el.dataset.id, tok = k + ':' + id;
+    if (ui.del !== tok) {
+      ui.del = tok;
+      clearTimeout(delTimer);
+      delTimer = setTimeout(() => { if (ui.del === tok) { ui.del = null; render(); } }, 3000);
+      render();
+      return;
+    }
+    ui.del = null; clearTimeout(delTimer);
+    if (k === 'item') { state.meta.items.splice(+id, 1); Store.saveMeta(); }
+    else if (k === 'bill') {
+      const d = el.dataset.d, D = state.days[d];
+      if (D) { D.bills = D.bills.filter(b => b.id !== id); Store.saveDay(d); }
+    } else {
+      const D = state.days[ui.date];
+      if (D) { D[k] = D[k].filter(e => e.id !== id); Store.saveDay(ui.date); }
+    }
+    toast(t('removed'));
+    render();
+  },
+  /* बिल */
+  chip(el) {
+    const it = state.meta.items[+el.dataset.i]; if (!it) return;
+    addToDraft(it.n, 1, it.p);
+    render();
+  },
+  pick(el) {
+    const it = state.meta.items[+el.dataset.i]; if (!it) return;
+    $('b_name').value = it.n; $('b_price').value = it.p;
+    $('sug').innerHTML = '';
+    $('b_qty').focus(); try { $('b_qty').select(); } catch (e) {}
+  },
+  addline() {
+    const name = $('b_name').value.trim(), p = num($('b_price').value);
+    let q = num($('b_qty').value); if (!(q > 0)) q = 1;
+    if (!name) { toast(t('bNoName'), true); $('b_name').focus(); return; }
+    if (!(p > 0)) { toast(t('bNoPrice'), true); $('b_price').focus(); return; }
+    const isNew = addToDraft(name, q, p);
+    if (isNew) toast(t('bAuto'));
+    ui.focus = 'b_name';
+    render({fresh: true});
+  },
+  qplus(el) { const l = ui.draft.lines[+el.dataset.j]; if (l) { l.q = r2(l.q + 1); refreshLines(); } },
+  qminus(el) {
+    const j = +el.dataset.j, l = ui.draft.lines[j]; if (!l) return;
+    if (l.q > 1) l.q = r2(l.q - 1); else ui.draft.lines.splice(j, 1);
+    refreshLines();
+  },
+  lrm(el) { ui.draft.lines.splice(+el.dataset.j, 1); refreshLines(); },
+  clearbill() { ui.draft = {cust: '', lines: [], disc: ''}; render({fresh: true}); },
+  savebill() {
+    const dr = ui.draft;
+    if (!dr.lines.length) { toast(t('bNoItems'), true); return; }
+    const date = TODAY(), D = ensureDay(date);
+    const disc = draftDisc(), total = r2(draftSub() - disc);
+    const no = D.bills.reduce((m, b) => Math.max(m, b.no || 0), 0) + 1;
+    const bill = {id: uid(), no, ts: Date.now(), cust: dr.cust.trim(), lines: dr.lines.map(l => ({n: l.n, q: l.q, p: l.p})), disc: r2(disc), total};
+    D.bills.push(bill);
+    dr.lines.forEach(l => { const i = findIdx(l.n); if (i >= 0) state.meta.items[i].c = (state.meta.items[i].c || 0) + 1; });
+    Store.saveDay(date); Store.saveMeta();
+    ui.expand = bill.id;
+    ui.draft = {cust: '', lines: [], disc: ''};
+    toast(t('bSaved'));
+    render({fresh: true});
+  },
+  btoggle(el) { ui.expand = ui.expand === el.dataset.id ? null : el.dataset.id; render(); },
+  copybill(el) {
+    const D = state.days[el.dataset.d]; const b = D && D.bills.find(x => x.id === el.dataset.id); if (!b) return;
+    copyText(billText(el.dataset.d, b)).then(ok => toast(ok ? t('bCopied') : t('bCopyFail'), !ok));
+  },
+  /* रिपोर्ट */
+  repmode(el) { ui.repMode = el.dataset.m; render({fresh: true}); },
+  repprev() { shiftRep(-1); },
+  repnext() { shiftRep(1); },
+  gotoday(el) { ui.date = el.dataset.d; ui.tab = 'day'; ui.open = null; render({fresh: true}); window.scrollTo(0, 0); },
+  gomonth(el) { ui.repYm = el.dataset.ym; ui.repMode = 'month'; render({fresh: true}); window.scrollTo(0, 0); },
+  /* सामान, सेटिंग */
+  additem() {
+    const name = $('i_name').value.trim(), p = num($('i_price').value);
+    if (!name || !(p > 0)) { toast(t('iNeed'), true); return; }
+    const i = findIdx(name);
+    if (i < 0) state.meta.items.push({n: name, p, c: 0}); else state.meta.items[i].p = p;
+    Store.saveMeta();
+    toast(t('added'));
+    ui.focus = 'i_name';
+    render({fresh: true});
+  },
+  lang(el) { lang = el.dataset.l; state.meta.lang = lang; Store.saveMeta(); render({fresh: true}); },
+  async backup() {
+    try {
+      const data = JSON.stringify({v: 1, meta: state.meta, days: state.days});
+      const fname = 'dukaan-hisaab-backup-' + TODAY() + '.json';
+      let dl = null;
+      try { dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) {}
+      if (dl) { await dl.save({filename: fname, data}); }
+      else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([data], {type: 'application/json'}));
+        a.download = fname; document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+      }
+      toast(t('bkDone'));
+    } catch (e) { if (!(e && e.code === 'declined')) toast(t('bkFail'), true); }
+  }
+};
+
+const CH = {
+  itemprice(el) {
+    const it = state.meta.items[+el.dataset.i]; if (!it) return;
+    const p = num(el.value);
+    if (p > 0) { it.p = p; Store.saveMeta(); toast(t('iPriceSaved')); } else { el.value = it.p; }
+  },
+  shop(el) { state.meta.shop = el.value.trim(); Store.saveMeta(); $('shop').textContent = state.meta.shop || t('shopDef'); toast(t('added')); },
+  phone(el) { state.meta.phone = el.value.trim(); Store.saveMeta(); toast(t('added')); }
+};
+
+function addToDraft(name, q, p) {
+  let idx = findIdx(name), isNew = false;
+  if (idx < 0) { state.meta.items.push({n: name, p, c: 0}); idx = state.meta.items.length - 1; isNew = true; Store.saveMeta(); }
+  else if (state.meta.items[idx].p !== p) { state.meta.items[idx].p = p; Store.saveMeta(); }
+  const nm = state.meta.items[idx].n;
+  const ex = ui.draft.lines.find(l => l.n.toLowerCase() === nm.toLowerCase() && l.p === p);
+  if (ex) ex.q = r2(ex.q + q); else ui.draft.lines.push({n: nm, q, p});
+  return isNew;
+}
+
+function shiftDay(n) {
+  const dt = parseYmd(ui.date); dt.setDate(dt.getDate() + n);
+  const s = ymd(dt);
+  if (s > TODAY()) return;
+  ui.date = s; ui.open = null; ui.del = null;
+  render({fresh: true});
+}
+function shiftRep(n) {
+  if (ui.repMode === 'month') {
+    const p = ui.repYm.split('-').map(Number);
+    const s = ymd(new Date(p[0], p[1] - 1 + n, 1)).slice(0, 7);
+    if (s > TODAY().slice(0, 7)) return;
+    ui.repYm = s;
+  } else {
+    if (ui.repY + n > now.getFullYear()) return;
+    ui.repY += n;
+  }
+  render({fresh: true});
+}
+
+function copyText(s) {
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = s; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove(); return ok;
+  };
+  try {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(s).then(() => true).catch(() => fallback());
+  } catch (e) {}
+  return Promise.resolve(fallback());
+}
+
+async function restoreFile(file) {
+  try {
+    const obj = JSON.parse(await file.text());
+    if (!obj || typeof obj !== 'object' || !obj.days || typeof obj.days !== 'object') throw new Error('bad');
+    toast(t('rsMore'));
+    const m = normMeta(obj.meta);
+    if (!state.meta.shop) state.meta.shop = m.shop;
+    if (!state.meta.phone) state.meta.phone = m.phone;
+    m.items.forEach(it => { const i = findIdx(it.n); if (i < 0) state.meta.items.push(it); else state.meta.items[i] = it; });
+    Object.keys(obj.days).forEach(d => { if (/^\d{4}-\d{2}-\d{2}$/.test(d)) state.days[d] = normDay(obj.days[d]); });
+    await Store.saveAll();
+    toast(t('rsDone'));
+    render({fresh: true});
+  } catch (e) { toast(t('rsBad'), true); }
+}
+
+/* ===== सुनने वाले (events) ===== */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-a]');
+  if (!el) return;
+  const fn = A[el.dataset.a];
+  if (fn) fn(el, e);
+});
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'dpick') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(el.value) && el.value <= TODAY()) { ui.date = el.value; ui.open = null; render({fresh: true}); }
+    return;
+  }
+  if (el.id === 'restoreFile') { if (el.files && el.files[0]) restoreFile(el.files[0]); el.value = ''; return; }
+  if (el.dataset && el.dataset.ch && CH[el.dataset.ch]) CH[el.dataset.ch](el);
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.id === 'b_cust') ui.draft.cust = el.value;
+  else if (el.id === 'b_disc') { ui.draft.disc = el.value; refreshLines(); }
+  else if (el.id === 'b_name') {
+    const q = el.value.trim().toLowerCase(), box = $('sug');
+    const items = state.meta.items;
+    if (!q) { box.innerHTML = ''; return; }
+    const hits = [];
+    items.forEach((it, i) => { if (it.n.toLowerCase().indexOf(q) >= 0) hits.push(i); });
+    hits.sort((a, b) => (items[b].c || 0) - (items[a].c || 0));
+    box.innerHTML = hits.slice(0, 5).map(i => `<button type="button" data-a="pick" data-i="${i}"><span>${esc(items[i].n)}</span><span>${money(items[i].p)}</span></button>`).join('');
+    const ex = findIdx(el.value);
+    if (ex >= 0 && !$('b_price').value) $('b_price').value = items[ex].p;
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const id = e.target.id;
+  if (id === 'f_amt' || id === 'f_note') { e.preventDefault(); if (ui.open) A.addentry({dataset: {k: ui.open}}); }
+  else if (id === 'b_name' || id === 'b_qty' || id === 'b_price') { e.preventDefault(); A.addline(); }
+  else if (id === 'i_name' || id === 'i_price') { e.preventDefault(); A.additem(); }
+});
+
+/* ===== शुरू ===== */
+(async function boot() {
+  render();
+  await Store.init();
+  lang = state.meta.lang === 'hl' ? 'hl' : 'hi';
+  ui.ready = true;
+  render({fresh: true});
+  if (Store.migrated) toast(t('migrated'));
+})();
+})();
+</script>
+</body>
+</html>
